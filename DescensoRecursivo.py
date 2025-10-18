@@ -83,51 +83,67 @@ def t_IDENTIFIER(t):
     return t
 
 # Métodos librería PLY
+# Ignorar espacios en blanco y tabulaciones
 t_ignore = ' \t'
-def t_newline(t): r'\n+' ; t.lexer.lineno += t.value.count("\n")
-def t_error(t): print(f"[LEXER ERROR] Caracter no reconocido '{t.value[0]}'") ; t.lexer.skip(1)
-
+# Contar los saltos de línea
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += t.value.count("\n")
+# Detectar un error léxico (Caracter fuera del diccionario)
+def t_error(t):
+    print(f"[ERROR] Caracter no reconocido '{t.value[0]}'")
+    t.lexer.skip(1)
 # Construir lexer
 lexer = lex.lex()
 
-# =========================================================================
-# 2. CLASE TOKENS ADAPTADA Y CORRECCIÓN DE ERRORES (Index)
-# =========================================================================
-
+# Clase para el manejo de tokens (Parser - Lexer)
 class TokensPLY:
+    # Atributo para almacenar la instancia del lexer
     lexer = None  
+    # Atributo para almacenar el token actual
     current_token = None 
-
+    # Constructor 
     def __init__(self, lexer, source_code):
+        # Instanciar lexer
         self.lexer = lexer
+        # Almacenar cadenas de código de prueba
         self.lexer.input(source_code)
+        # Llamar a la función avanza
         self.avanza()
-
+    # Método para devolver el token actual
     def current(self):
+        # Verificar si el token actual no es EOF (End of File)
         if self.current_token and self.current_token.type != 'EOF':
-            # Devolvemos el tipo y valor
+            # Devolver el tipo y valor del token actual
             return [self.current_token.type, self.current_token.value]
+        # Retornar EOL en caso de cadena de tokens vacía
         return ["EOL", ""]
-
+    # Método para devolver la posición del token actual
     def current_lexpos(self):
-        # Devuelve la posición léxica (índice de carácter) del token actual
+        # Verificar la posición del token actual
         if self.current_token and hasattr(self.current_token, 'lexpos'):
+            # Retornar índice
             return self.current_token.lexpos
         return -1
-
+    # Método para avanzar al siguiente token
     def avanza(self):
+        # Almacenar el siguiente token
         self.current_token = self.lexer.token()
+        # Verificar si todavía existen tokens disponibles
         if not self.current_token:
+            # Crear objeto para la línea 
             self.current_token = lex.LexToken()
+            # Asignar EOL al final de línea
             self.current_token.type = 'EOL'
             self.current_token.value = ''
-            self.current_token.lexpos = self.lexer.lexpos # Usar la posición final del lexer
+            # Asignar posición final a EOL
+            self.current_token.lexpos = self.lexer.lexpos
             self.current_token.lineno = -1
 
-# FUNCIÓN DE ERROR CORREGIDA PARA USAR LA POSICIÓN LÉXICA REAL
+# Función para agregar errores e identificar su posición en línea
 def addError(errors, expected, token, index):
+  # Construir mensaje de error
   token_str = f"'{token[0]}', valor '{token[1]}'"
-  # Se reporta index + 1 para mostrar la posición basada en 1 (más intuitivo)
   errors.append( f"ERROR en index {index + 1}: esperaba {expected}, recibio {token_str}"  )
 
 # =========================================================================
