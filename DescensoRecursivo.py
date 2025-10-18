@@ -112,8 +112,8 @@ class TokensPLY:
         self.avanza()
     # Método para devolver el token actual
     def current(self):
-        # Verificar si el token actual no es EOF (End of File)
-        if self.current_token and self.current_token.type != 'EOF':
+        # Verificar si el token actual no es EOL (End of Line)
+        if self.current_token and self.current_token.type != 'EOL':
             # Devolver el tipo y valor del token actual
             return [self.current_token.type, self.current_token.value]
         # Retornar EOL en caso de cadena de tokens vacía
@@ -284,54 +284,54 @@ def assign(tokens, errors):
         # Agregar error de caracter inválido
         addError(errors, "ID (Identificador)", [token, content], current_pos)
 
-
-# =========================================================================
-# 4. PRUEBA DE INTEGRACIÓN
-# =========================================================================
-
+# Función para integrar el Parser-Lexer
 def integrar_parser_lexer(lexer, source_code):
-    print("-" * 60)
-    print(f"Analizando Asignación: '{source_code}'")
-
+    # Imprimir separador visual
+    print("\n" + "=" * 60)
+    # Imprimir código analizado
+    print(f"Analizando tokens: '{source_code}'")
+    # Inicializar token manager y lista de errores
     token_manager = TokensPLY(lexer, source_code)
     errors = []
-
+    # Ejecutar análisis sintáctico
     assign(token_manager, errors)
-
-    # Comprobación de fin de línea
+    # Obtener token actual y su posición
     current_token, current_content = token_manager.current()
     current_pos = token_manager.current_lexpos()
-
-    if current_token != "EOL":
+    # Verificar si existen tokens después de un posible error
+    if len(errors) == 0 and current_token != "EOL":
+        # Agregar error de EOL (End Of File)
         addError( errors, "fin de línea (EOL)", token_manager.current() , current_pos )
-    
-    print("-" * 60)
+    # Verificar y mostrar resultados del análisis
     if len(errors) == 0:
-        print("✅ ANÁLISIS COMPLETO: La asignación es sintácticamente válida.")
+        print("Análisis Válido.")
     else:
-        print("❌ ERRORES DE SINTAXIS ENCONTRADOS:")
+        print("Análisis Inválido - Errores encontrados:")
+        # Iterar sobre errores y mostrarlos
         for e in errors:
             print(e)
 
-# =========================================================================
-# 5. EJECUCIÓN
-# =========================================================================
-
+# Ejecutar programa
 if __name__ == "__main__":
-    
-    # --- Pruebas Anteriores (Ahora con indexación de carácter) ---
-    
-    # 1. Correcta: resultado = (a + 5.0) / (b - 2);
+    # Casos de prueba
     integrar_parser_lexer(lexer, "resultado = (a + 5.0) / (b - 2);") 
-    
-    # 2. ERROR: Falta operador de asignación (El error ahora apuntará al índice 9)
-    # Cadena: resultado (a + 5);
-    # Índices: 0123456789...
-    # Token '(' empieza en índice 9
-    integrar_parser_lexer(lexer, "resultado (a + 5);")
-    
-    # 3. ERROR: Falta punto y coma (El error ahora apuntará al índice 15)
-    # Cadena: variable = 100
-    # Índices: 0123456789012345
-    # El EOL/EOF ocurre después de '100' (índice 15)
-    integrar_parser_lexer(lexer, "variable = 100")
+    integrar_parser_lexer(lexer, "bandera = (x * 10) >= (y - 5);")
+    integrar_parser_lexer(lexer, "total = -miVariable + 2;")
+    integrar_parser_lexer(lexer, "flag = 100 == 100.0;")
+    integrar_parser_lexer(lexer, "area = PI * radio * radio;")
+    integrar_parser_lexer(lexer, "volumen = (largo + ancho) * alto;")
+    integrar_parser_lexer(lexer, "descuento = 50.0 / 2 + 10;")
+    integrar_parser_lexer(lexer, "check = a <= 100 || b > 50;")
+    integrar_parser_lexer(lexer, "status = !bandera && (contador == 0);")
+    integrar_parser_lexer(lexer, "valor = 1000 - -35.5;")
+    integrar_parser_lexer(lexer, "resultado = 2 * (1 + 3 * (4 - x));")
+    integrar_parser_lexer(lexer, "temp = -1 * (y - 7.5);")
+    integrar_parser_lexer(lexer, "esCero = miVar != 0;")
+    integrar_parser_lexer(lexer, "resultado (a + 5);") 
+    integrar_parser_lexer(lexer, "variable = 100")     
+    integrar_parser_lexer(lexer, "variable = 10 + ;") 
+    integrar_parser_lexer(lexer, "total = * 5;")      
+    integrar_parser_lexer(lexer, "a = (b + 2;")    
+    integrar_parser_lexer(lexer, "final = 100 - (20 + 5) / ;") 
+    integrar_parser_lexer(lexer, "x 50 = y;")   
+    integrar_parser_lexer(lexer, "bandera = (true AND false);")
