@@ -1,46 +1,82 @@
 # Francisco Aquino - A00833409
 # Descenso Recursivo - Parser / Lexer
 
+# Librería de regex (expresiones regulares)
 import ply.lex as lex
-import sys
-import os
-
-# =========================================================================
-# 1. TOKENIZER / LEXER (CÓDIGO BASE PLY)
-# =========================================================================
 
 # Diccionario de palabras reservadas
 reserved = {
-    'program': 'PROGRAM', 'main': 'MAIN', 'var': 'VAR', 'end': 'END', 
-    'int': 'INT', 'float': 'FLOAT', 'string': 'STRING', 'void': 'VOID', 
-    'if': 'IF', 'else': 'ELSE', 'do': 'DO', 'while': 'WHILE', 'print': 'PRINT', 
-    'return': 'RETURN', 'break': 'BREAK', 'continue': 'CONTINUE'
+    'program': 'PROGRAM',
+    'main': 'MAIN',
+    'var': 'VAR',
+    'end': 'END', 
+    'int': 'INT',
+    'float': 'FLOAT',
+    'string': 'STRING',
+    'void': 'VOID', 
+    'if': 'IF',
+    'else': 'ELSE',
+    'do': 'DO',
+    'while': 'WHILE',
+    'print': 'PRINT', 
+    'return': 'RETURN',
+    'break': 'BREAK',
+    'continue': 'CONTINUE'
 }
 
 # Diccionario de lexemas
 tokens = [
+    # Constantes alfanuméricas
     'IDENTIFIER', 'CONST_INT', 'CONST_FLOAT', 'CONST_STRING',
+    # Operadores aritméticos y lógicos
     'OP_ASSIGN', 'OP_EQ', 'OP_NEQ', 'OP_LEQ', 'OP_GEQ', 'OP_LT', 'OP_GT', 
     'OP_PLUS', 'OP_MINUS', 'OP_MULT', 'OP_DIV', 'OP_AND', 'OP_ANDAND', 'OP_OR', 'OP_OROR', 'OP_NOT',
+    # Delimitadores
     'SEMICOLON', 'COMMA', 'COLON', 'LBRACE', 'RBRACE', 'LBRACKET', 'RBRACKET', 'LPAREN', 'RPAREN',
-    'COMMENT', 'INVALID_ID'
+    # Comentarios
+    'COMMENT',
+    # Errores
+    'INVALID_ID'
 ] + list(reserved.values())
 
-# Definiciones de t_funciones (regex)
-t_OP_EQ = r'==' ; t_OP_NEQ = r'!=' ; t_OP_LEQ = r'<=' ; t_OP_GEQ = r'>=' ; t_OP_ASSIGN = r'='
-t_OP_LT = r'<' ; t_OP_GT = r'>' ; t_OP_PLUS = r'\+' ; t_OP_MINUS = r'-' ; t_OP_MULT = r'\*' ; t_OP_DIV = r'/'
-t_OP_ANDAND = r'&&' ; t_OP_AND = r'&' ; t_OP_OROR = r'\|\|' ; t_OP_OR = r'\|' ; t_OP_NOT = r'!'
+# Token Regex (PLY)
+# Operadores aritméticos y lógicos
+t_OP_EQ = r'==' ; t_OP_NEQ = r'!=' ; t_OP_LEQ = r'<=' ; t_OP_GEQ = r'>=' ; t_OP_ASSIGN = r'=' 
+t_OP_LT = r'<' ; t_OP_GT = r'>' ; t_OP_PLUS = r'\+' ; t_OP_MINUS = r'-' ; t_OP_MULT = r'\*' 
+t_OP_DIV = r'/' ; t_OP_ANDAND = r'&&' ; t_OP_AND = r'&' ; t_OP_OROR = r'\|\|' ; t_OP_OR = r'\|' ; t_OP_NOT = r'!'
+# Delimitadores
 t_SEMICOLON = r';' ; t_COMMA = r',' ; t_COLON = r':' ; t_LBRACE = r'\{' ; t_RBRACE = r'\}'
 t_LBRACKET = r'\[' ; t_RBRACKET = r'\]' ; t_LPAREN = r'\(' ; t_RPAREN = r'\)'
 
 # Reglas de reconocimiento de tokens
-def t_INVALID_ID(t): r'\d+[a-zA-Z_]\w*' ; print(f"[LEXER ERROR] Identificador inválido '{t.value}'") ; t.lexer.skip(1)
-def t_CONST_FLOAT(t): r'\d+\.\d+' ; t.value = float(t.value) ; return t
-def t_CONST_INT(t): r'\d+' ; t.value = int(t.value) ; return t
-def t_CONST_STRING(t): r'\"([^\\\n]|(\\.))*?\"' ; return t
-def t_COMMENT(t): r'\#.*' ; t.value = t.value.rstrip('\n') ; return t
+# Identificadores inválidos
+def t_INVALID_ID(t):
+    r'\d+[a-zA-Z_]\w*'
+    print(f"[ERROR] Identificador inválido '{t.value}'")
+    t.lexer.skip(1)
+# Constantes flotantes
+def t_CONST_FLOAT(t):
+    r'\d+\.\d+'
+    t.value = float(t.value)
+    return t
+# Constantes enteras
+def t_CONST_INT(t):
+    r'\d+'
+    t.value = int(t.value)
+    return t
+# Cadenas de caracteres
+def t_CONST_STRING(t):
+    r'\"([^\\\n]|(\\.))*?\"'
+    return t
+# Comentarios
+def t_COMMENT(t):
+    r'\#.*'
+    t.value = t.value.rstrip('\n') 
+    return t 
+# Identificadores y palabras reservadas
 def t_IDENTIFIER(t):
     r'[a-zA-Z_]\w*'
+    # Reconocer y convertir minúsculas para palabras reservadas
     lower_val = t.value.lower()
     if lower_val in reserved:
         t.type = reserved[lower_val]
