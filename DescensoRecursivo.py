@@ -146,119 +146,142 @@ def addError(errors, expected, token, index):
   token_str = f"'{token[0]}', valor '{token[1]}'"
   errors.append( f"ERROR en index {index + 1}: esperaba {expected}, recibio {token_str}"  )
 
-# =========================================================================
-# 3. PARSER DE DESCENSO RECURSIVO EXTENDIDO (LÓGICA)
-# =========================================================================
-
-# Declaraciones anticipadas
+# Reglas gramaticales
 def expresion(tokens, errors): pass
 def expr(tokens, errors): pass
 def termino(tokens, errors): pass
 def factor(tokens, errors): pass
-
 # F -> (+|-)? ( (E) | CONST_FLOAT | CONST_INT | IDENTIFIER )
 def factor(tokens, errors):
+    # Obtener tipo y valor del token actual
     token, content = tokens.current()
+    # Obtener posición del token actual
     current_pos = tokens.current_lexpos()
-    
+    # Verificar si existen operadores opcionales (+ | -)
     if token == 'OP_PLUS' or token == 'OP_MINUS':
+        # Avanzar al siguiente token
         tokens.avanza()
+        # Actualizar token actual
         token, content = tokens.current()
-    
+    # Verificar si existe una expresión entre paréntesis
     if token == 'LPAREN':
+        # Avanzar al siguiente token
         tokens.avanza()
+        # Llamar recursivamente a EXPRESION
         expresion(tokens, errors)
-        
+        # Actualizar token actual
         token, content = tokens.current()
+        # Verificar final de EXPRESION
         if token == 'RPAREN':
+            # Avanzar al siguiente token
             tokens.avanza()
         else:
+            # Agregar error en cierre
             addError(errors, "')'", [token, content], current_pos)
-            
+    # Verificar si existe una constante o identificador    
     elif token == 'CONST_INT' or token == 'CONST_FLOAT' or token == 'IDENTIFIER':
+        # Avanzar al siguiente token
         tokens.avanza()
-        
     else:
+        # Agregar error de caracter inválido
         addError(errors, "'(' , Constante o ID", [token, content], current_pos)
-
 
 # T' -> * F T' | / F T' | epsilon
 def termino_prime(tokens, errors):
+  # Obtener tipo y valor del token actual
   token, content = tokens.current()
-
+  # Verificar si existen operadores (* | /)
   if token == 'OP_MULT' or token == 'OP_DIV':
+    # Avanzar al siguiente token
     tokens.avanza()
+    # Llamar a la regla FACTOR
     factor(tokens, errors)
+    # Llamar recursivamente a T'
     termino_prime(tokens, errors)
-
 
 # T -> F T'
 def termino(tokens, errors):
+  # Llamar a la regla FACTOR
   factor(tokens, errors)
+  # Llamar a la regla T'
   termino_prime(tokens, errors)
-
 
 # E' -> + T E' | - T E' | epsilon
 def expr_prime(tokens, errors):
+  # Obtener tipo y valor del token actual
   token, content = tokens.current()
-
+  # Verificar si existen operadores (+ | -)
   if token == 'OP_PLUS' or token == 'OP_MINUS':
+    # Avanzar al siguiente token
     tokens.avanza()
+    # Llamar a la regla TERMINO
     termino(tokens, errors)
+    # Llamar recursivamente a E'
     expr_prime(tokens, errors)
-
 
 # E -> T E' (Expresión Aritmética)
 def expr(tokens, errors):
+  # Llamar a la regla TERMINO
   termino(tokens, errors)
+  # Llamar a la regla E'
   expr_prime(tokens, errors)
 
-
-# RELACIONAL -> op_rel E RELACIONAL | epsilon (Opción que permite solo una comparación)
+# RELACIONAL -> op_rel E RELACIONAL | epsilon
 def relacional(tokens, errors):
+    # Lista válida de operadores relacionales
     op_rel = ['OP_GT', 'OP_LT', 'OP_GEQ', 'OP_LEQ', 'OP_NEQ', 'OP_EQ']
+    # Obtener tipo y valor del token actual
     token, content = tokens.current()
-    
+    # Verificar si el token actual es un operador válido
     if token in op_rel:
+        # Avanzar al siguiente token
         tokens.avanza()
+        # Llamar a la regla EXPRESION
         expr(tokens, errors)
 
-
-# EXPRESION -> E RELACIONAL (Regla más alta para expresiones)
+# EXPRESION -> E RELACIONAL
 def expresion(tokens, errors):
+    # Llamar a la regla E
     expr(tokens, errors)
+    # Llamar a la regla RELACIONAL
     relacional(tokens, errors)
 
-
-# ASSIGN -> id = EXPRESION ; (Punto de inicio de la verificación)
+# ASSIGN -> id = EXPRESION; 
 def assign(tokens, errors):
+    # Obtener tipo y valor del token actual
     token, content = tokens.current()
-    current_pos = tokens.current_lexpos() # Posición del token actual (ID)
-
-    # 1. IDENTIFIER (id)
+    # Obtener posición del token actual
+    current_pos = tokens.current_lexpos()
+    # Verificar si el primer token es un identificador
     if token == 'IDENTIFIER':
+        # Avanzar al siguiente token
         tokens.avanza()
+        # Obtener tipo y valor del token actual
         token, content = tokens.current()
-        current_pos = tokens.current_lexpos() # Posición del siguiente token (=)
-        
-        # 2. OP_ASSIGN (=)
+        # Obtener posición del token actual
+        current_pos = tokens.current_lexpos()
+        # Verificar si el siguiente token es un operador de asignación (=)
         if token == 'OP_ASSIGN':
+            # Avanzar al siguiente token
             tokens.avanza()
-            
-            # 3. EXPRESION
+            # Llamar a la regla EXPRESION
             expresion(tokens, errors)
-            
+            # Obtener tipo y valor del token actual
             token, content = tokens.current()
-            current_pos = tokens.current_lexpos() # Posición del siguiente token (;)
-            
-            # 4. SEMICOLON (;)
+            # Obtener posición del token actual
+            current_pos = tokens.current_lexpos()
+            # Verificar si el siguiente token es un operador válido (;)
             if token == 'SEMICOLON':
+                # Avanzar al siguiente token
                 tokens.avanza()
             else:
+                # Agregar error de caracter inválido
                 addError(errors, "';'", [token, content], current_pos)
         else:
+            # Agregar error de caracter inválido
             addError(errors, "'='", [token, content], current_pos)
     else:
+        # Agregar error de caracter inválido
         addError(errors, "ID (Identificador)", [token, content], current_pos)
 
 
